@@ -1,0 +1,22 @@
+<div ng-app="timeToTravel" ng-controller="TimeController">
+    Source: <br>
+		<input type="text" ng-model="source" id="source" /><br>
+		Destination: <br>
+		<input type="text" ng-model="destination" id="destination" ><br>
+		Time of the Day: <br>
+		<div class="clockpicker" clock-picker = "" data-autoclose="true">
+            <input id = "time" type="text" ng-model = "time" placeholder = "Arrival Time">
+        </div><br>
+		Email Address: <br>
+		<input type="text" ng-model="email" id="email"><br>
+		<button type="button" ng-click="afterSubmit()">Submit</button>
+		<div ng-show="error">
+			Please fill all the fields
+		</div>
+
+	<hr>
+	<button type="button" ng-click="getApiList()">Refresh</button>
+	<div ng-repeat="i in api_data track by i.id">
+		<p>{{i.apirequests}}</p>
+	</div>
+</div>
