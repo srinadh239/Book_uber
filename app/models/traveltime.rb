@@ -19,7 +19,7 @@ class Traveltime < ActiveRecord::Base
   	end		
   	if !uberGOFound
   		Delayed::Worker.logger.debug("Ubergo not found")
-  		traveltime.checkapi(id)
+  		traveltime.delay(run_at: 1.minutes.from_now).checkapi(id)
   		p "Uber not found pushed to queue"
   	else
   		Delayed::Worker.logger.debug(estimate_time)
@@ -30,24 +30,33 @@ class Traveltime < ActiveRecord::Base
   		Delayed::Worker.logger.debug(google_response_json)
   		check_time = time_now+google_response_json["rows"][0]["elements"][0]["duration_in_traffic"]["value"]
   		travel_time = google_response_json["rows"][0]["elements"][0]["duration_in_traffic"]["value"]+estimate_time
-  		p arrival_time
-  		p Time.now.strftime('%s')
-  		p travel_time
-  		p estimate_time
-  		buffer =  arrival_time.to_i - travel_time -Time.now.strftime('%s').to_i
-  		Delayed::Worker.logger.debug(buffer)
-  		check_from_now = (buffer*10)/travel_time
-  		check_from_now_min = check_from_now/60
-  		Delayed::Worker.logger.debug(check_from_now)
-  		if buffer == 10
-  			Delayed::Worker.logger.debug("Time to book uber")
-  			# send mail
-  			UserMailer.book_uber(traveltime.email) unless traveltime.email.nil?
-  		else
-  			Delayed::Worker.logger.debug("added to queue")
-  			# add to queue
-  			traveltime.delay(run_at: check_from_now_min.minutes.from_now).checkapi(id)
-  		end
+  		Delayed::Worker.logger.debug(arrival_time)
+  		Delayed::Worker.logger.debug(Time.now.strftime('%s'))
+  		Delayed::Worker.logger.debug(travel_time)
+  		if travel_time+Time.now.strftime('%s').to_i<arrival_time.to_i
+	  		buffer =  arrival_time.to_i - travel_time -Time.now.strftime('%s').to_i
+	  		Delayed::Worker.logger.debug(buffer)
+	  		check_from_now = (buffer*10)/travel_time
+	  		check_from_now_min = check_from_now/60
+	  		Delayed::Worker.logger.debug(check_from_now_min)
+	  		if buffer <= estimate_time
+	  			Delayed::Worker.logger.debug("Time to book uber")
+	  			# send mail
+	  			UserMailer.book_uber(traveltime.email).deliver_now unless traveltime.email.nil?
+	  		elsif check_from_now == 0 || (buffer <= 600 && estimated_time <= buffer)
+	  			Delayed::Worker.logger.debug("add to queue and check each minute")
+	  			traveltime.delay(run_at: 1.minutes.from_now).checkapi(id)
+	  		else
+	  			Delayed::Worker.logger.debug("added to queue")
+	  			# add to queue
+	  			Delayed::Worker.logger.debug(check_from_now)
+	  			traveltime.delay(run_at: check_from_now.minutes.from_now).checkapi(id)
+	  			Delayed::Worker.logger.debug("After added to queue")
+	  		end
+	  	else
+	  		Delayed::Worker.logger.debug("cannot book uber")
+	  		UserMailer.cannot_book_uber(traveltime.email).deliver_now unless traveltime.email.nil?
+	  	end
   	end
   end
 end

@@ -31,13 +31,12 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-      address:              'smtp.gmail.com',
+      address:              'smtp.zoho.com',
       port:                  587,
-      user_name:            'srinadh239@gmail.com',
-      password:             'passwordchange@123',
-      authentication:       'login',
-      enable_starttls_auto:  true,
-      openssl_verify_mode:   'none'
+      user_name:            'support@wareshare.in',
+      password:             'wareshare123',
+      authentication:       'plain',
+      enable_starttls_auto:  true
   }
   # Asset digests allow you to set far-future HTTP expiration dates on all assets,
   # yet still be able to expire them through the digest params.
